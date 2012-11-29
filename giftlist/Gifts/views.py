@@ -9,8 +9,6 @@ from django.template import RequestContext
 from datetime import datetime
 from django.db.models import Q
 
-# Create your views here.
-
 def home(request):
     return HttpResponseRedirect(reverse('Gifts.views.user_home'))
 
@@ -30,7 +28,7 @@ def user_home(request):
     for p in people:
         g = Gift.objects.filter(recipient = p).filter(reserved_by = myself)
         if g.count() > 0:
-            people_gifts[p] = g[0]
+            people_gifts[p] = g
         else:
             people_gifts[p] = None
 
@@ -68,7 +66,7 @@ def add_secret_gift(request, recipient_id):
         form = GiftForm(request.POST)
         if form.is_valid():
             new_gift = form.save(commit=False)
-            clear_reserved_gifts(myself, recipient)
+            # clear_reserved_gifts(myself, recipient)
             new_gift.recipient = recipient
             new_gift.secret = True
             new_gift.reserved_by = myself
@@ -127,7 +125,7 @@ def reserve_gift(request, recipient_id, gift_id):
 
     if gift.reserved_by is None:
         # unreserve any other gifts first
-        clear_reserved_gifts(myself, recipient)
+        # clear_reserved_gifts(myself, recipient)
         # then reserve this gift for me
         gift.reserved_by = myself
         gift.date_reserved = datetime.now()
@@ -161,14 +159,12 @@ def unreserve_gift(request, recipient_id, gift_id):
 def view_user(request, user_id):
     myself = get_person_from_user(request.user)
     user = get_object_or_404(Person, pk=user_id)
-    reserved_gift = get_reserved_gift(myself, user)
-    if reserved_gift:
-        gifts = Gift.objects.filter(recipient=user).filter(Q(secret=False) | Q(pk=reserved_gift.pk)) # may want a way to put things in without reserving them...
-    else:
-        gifts = Gift.objects.filter(recipient=user).filter(secret=False)
+    reserved_gifts = [g.pk for g in get_reserved_gifts(myself, user)]
+
+    gifts = Gift.objects.filter(recipient=user).filter(Q(secret=False) | Q(pk__in=reserved_gifts)) # may want a way to put things in without reserving them...
 
     return render(request, 'view_user.html',{
         'user' : user,
-        'reserved_gift' : reserved_gift,
+        'reserved_gifts' : reserved_gifts,
         'gifts' : gifts,
         })

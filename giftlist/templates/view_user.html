@@ -15,13 +15,15 @@
     </thead>
     <tbody>
         {% for gift in gifts %}
-        <tr class="{% ifequal gift.pk reserved_gift.pk %}info{% endifequal %}">
-            <td>{{ gift.title }}</td>
+        <tr class="{% if gift.pk in reserved_gifts %}info{% endif %}">
+            <td>{{ gift.title }}{% if gift.secret %} <small class="muted">(Secret)</small>{% endif %}</td>
             <td>{{ gift.description }}</td>
             <td>{{ gift.price }}</td>
             <td><a href="{{ gift.url }}">{% if gift.url %}View{% endif %}</a></td>
             <td>
-                {% if gift.pk == reserved_gift.pk %}<a href="{% url Gifts.views.unreserve_gift user.pk gift.pk %}">[ Unreserve ]</a>
+                {% if gift.pk in reserved_gifts %}
+                    <a href="{% url Gifts.views.unreserve_gift user.pk gift.pk %}">
+                    {% if gift.secret %}[ Delete ]{% else %}[ Unreserve ]{% endif %}</a>
                 {% elif gift.reserved_by %}Reserved
                 {% else %}<a href="{% url Gifts.views.reserve_gift user.pk gift.pk %}">[ Reserve ]</a>
                 {% endif %}

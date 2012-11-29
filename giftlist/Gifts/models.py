@@ -33,15 +33,9 @@ def clear_reserved_gifts(myself, recipient):
         else:
             g.save()
 
-def get_reserved_gift(myself, recipient):
-    selected_gift = Gift.objects.filter(recipient=recipient).filter(reserved_by=myself)
-    if selected_gift.count() == 1:
-        return selected_gift[0]
-    elif selected_gift.count() > 1:
-        print "There were multiple gifts from %s to %s.  Returned the first one." % (myself, recipient)
-        return selected_gift[0]
-    else:
-        return None
+def get_reserved_gifts(myself, recipient):
+    selected_gifts = Gift.objects.filter(recipient=recipient).filter(reserved_by=myself)
+    return selected_gifts
 
 class Person(models.Model):
     login_user = models.ForeignKey(User, related_name='django user', blank=True, null=True, unique=True)
