@@ -4,3 +4,4 @@
 /share
 *.pyc
 .Python
+giftlist/Gifts/migrations
