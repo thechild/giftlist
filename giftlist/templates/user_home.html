@@ -15,14 +15,13 @@
         </div>
     </div>
     {% endfor %}
-    <br>
     <div class="row-fluid">
         <div class="span5 offset1">
             <a href="{% url Gifts.views.add_gift %}">[ + Add a Gift you want ]</a></p>
         </div>
         <div class="span6"></div>
     </div>
-    
+    <br>
     <h4 class="underline">Gifts I'm Giving</h4>
     {% for p, g in people_gifts.items %}
     <div class="row-fluid">

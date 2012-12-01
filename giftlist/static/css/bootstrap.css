@@ -606,7 +606,7 @@ cite {
   font-style: normal;
 }
 
-.muted {
+.muted, .helptext {
   color: #999999;
 }
 

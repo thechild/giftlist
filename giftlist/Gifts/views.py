@@ -1,13 +1,16 @@
 from django.shortcuts import render, get_object_or_404
-from django.contrib.auth import logout
+from django.contrib.auth import login, authenticate, logout
 from django.core.urlresolvers import reverse
 from django.http import Http404, HttpResponseRedirect
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from Gifts.models import *
+from Gifts.forms import *
 from django.template import RequestContext
 from datetime import datetime
 from django.db.models import Q
+from django.core.exceptions import ObjectDoesNotExist
+from django.contrib.auth.forms import UserCreationForm
 
 def home(request):
     return HttpResponseRedirect(reverse('Gifts.views.user_home'))
@@ -17,6 +20,46 @@ def user_logout(request):
         logout(request)
         messages.success(request, "You have been successfully logged out.")
     return HttpResponseRedirect(reverse('django.contrib.auth.views.login'))
+
+
+def new_user_signup(request, user_key):
+    if request.user.is_authenticated():
+        logout(request) # can't set up a new account while you're already logged in
+
+    person = get_object_or_404(Person, creation_key__exact=user_key)
+    
+    if request.method == 'POST':
+        form = UserCreateForm(request.POST)
+        if form.is_valid():
+            username = form.clean_username()
+            password = form.clean_password2()
+            form.save()
+            user = authenticate(username=username, password=password)
+            login(request, user)
+            print "Created new user name '%s'" % (form['username'], )
+            person.login_user = user
+            person.save()
+            messages.success(request,"Your account is all set up, and you're now logged in.")
+            return HttpResponseRedirect(reverse('Gifts.views.user_home'))
+        else:
+            print "form wasn't valid"
+    else:
+        try:
+            user = User.objects.get(email__exact=person.email)
+        except ObjectDoesNotExist as dne:
+            user = None
+
+        if user:
+            messages.error(request, "You've already created your account.  Please login below.")
+            return HttpResponseRedirect(reverse('django.contrib.auth.views.login'))
+        else:
+            form = UserCreateForm()
+            form.initial = {'first_name': person.first_name, 'last_name': person.last_name, 'email': person.email}
+        
+        print form
+
+        return render(request, 'new_user.html',
+                {'form': form})
 
 @login_required
 def user_home(request):

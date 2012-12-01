@@ -1,8 +1,11 @@
 from django.db import models
-from django.contrib.auth.models import User
-from django.forms import ModelForm
 from django.core.exceptions import ObjectDoesNotExist
+from django.contrib.auth.models import User
+from django.core.urlresolvers import reverse
+from uuid import uuid4
+import socket
 
+# this should rarely run
 def get_person_from_user(user):
     try:
         # do we already have the user? If so, just return it
@@ -37,17 +40,27 @@ def get_reserved_gifts(myself, recipient):
     selected_gifts = Gift.objects.filter(recipient=recipient).filter(reserved_by=myself)
     return selected_gifts
 
+def make_uuid():
+    return str(uuid4())
+
 class Person(models.Model):
-    login_user = models.ForeignKey(User, related_name='django user', blank=True, null=True, unique=True)
+    login_user = models.ForeignKey(User, related_name='django user', blank=True, null=True, unique=True, on_delete=models.SET_NULL)
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
     email = models.EmailField(unique=True)
-    
+    creation_key = models.CharField(max_length=150, default=make_uuid)
+
+    def signup_url(self):
+        return 'http://%s%s' % (socket.gethostname(), reverse('Gifts.views.new_user_signup', args=(self.creation_key,)))
+
     def gifts(self):
         return Gift.objects.filter(recipient=self).exclude(secret=True)
 
     def name(self):
-        return '%s %s' % (self.first_name, self.last_name)
+        if not (self.first_name and self.last_name):
+            return self.email
+        else:
+            return '%s %s' % (self.first_name, self.last_name)
 
     def __unicode__(self):
         return self.name()
@@ -65,13 +78,3 @@ class Gift(models.Model):
 
     def __unicode__(self):
         return '%s (%s)' % (self.title, self.recipient)
-
-class PersonForm(ModelForm):
-    class Meta:
-        model = Person
-        fields = ('first_name', 'last_name', 'email')
-
-class GiftForm(ModelForm):
-    class Meta:
-        model = Gift
-        fields = ('title', 'description', 'url', 'price')
